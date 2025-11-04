@@ -1,61 +1,95 @@
-# Practica 4 Informatica 2 Simulación de una red de enrutadores
+# Práctica 4 – Informática 2  
+## Simulación de una red de enrutadores
 
-## Descripción general
-Este proyecto simula el funcionamiento básico de una **red de routers (enrutadores)**.  
-Cada router puede conectarse con otros mediante enlaces que tienen un **costo** (por ejemplo, distancia o tiempo).  
-El programa permite calcular el **camino más corto** entre dos routers usando el **algoritmo de Dijkstra**, mostrando además las tablas de enrutamiento y los vecinos de cada nodo.
+Esta practica simula el funcionamiento básico de una **red de routers (enrutadores)**, donde cada router puede conectarse con otros mediante enlaces que tienen un **costo** (como la distancia, el tiempo o la calidad del enlace).  
 
-El objetivo es aplicar **Programación Orientada a Objetos (POO)** y el uso de **contenedores de la STL** (`map`, `vector`, `priority_queue`, etc.) para modelar una red.
+El programa calcula los **caminos más cortos** entre routers usando el **algoritmo de Dijkstra**, permitiendo modificar la topología de la red en tiempo real.  
+
+El objetivo es aplicar los conceptos de **Programación Orientada a Objetos (POO)** y el uso de **contenedores de la STL** (`map`, `vector`, `pair`, `algorithm`, etc.) para modelar una red.
+
+---
+
+## Objetivos de la practica
+
+- Modelar routers y conexiones utilizando POO.  
+- Manipular estructuras dinámicas con los contenedores de la STL.  
+- Implementar una simulación funcional de una red de enrutadores.  
+- Permitir agregar, eliminar y conectar routers durante la ejecución.  
+- Calcular el camino más corto entre routers y mostrarlo al usuario.
 
 ---
 
 ## Funcionalidades principales
-1. Agregar o eliminar routers y enlaces entre ellos.  
-2. Visualizar la topología actual de la red (quién está conectado con quién).  
-3. Mostrar los vecinos de un router y el costo de cada conexión.  
-4. Calcular el camino más corto entre dos routers con su costo total.  
-5. Ver la tabla de enrutamiento de cualquier router.  
-6. Crear una red de ejemplo automáticamente para pruebas rápidas.  
+
+1.  **Agregar o eliminar routers** en cualquier momento.  
+2.  **Agregar enlaces** entre routers con un costo determinado.  
+3.  **Visualizar la red completa**, mostrando las conexiones entre routers.  
+4.  **Calcular los caminos más cortos** desde un router origen hacia todos los demás.  
+5.  **Cargar una red desde un archivo `.txt`**, que describe la topología (routers y costos).  
+6.  **Crear una red aleatoria**, indicando el número de routers y conexiones por cada uno.  
+7.  Uso del **algoritmo de Dijkstra** para obtener rutas óptimas.  
 
 ---
 
-## Lo que muestra en terminal
-| Comando | Descripción |
-|----------|-------------|
-| `grafo` | Muestra toda la red con sus enlaces y costos. |
-| `vecinos X` | Muestra los routers directamente conectados a `X`. |
-| `camino A B` | Calcula y muestra el camino más corto entre `A` y `B`. |
-| `tabla X` | Muestra la tabla de enrutamiento del router `X`. |
-| `enlazar A B costo` | Agrega un nuevo enlace entre `A` y `B` con el costo indicado. |
-| `salir` | Termina la ejecución del programa. |
+##  Estructura del proyecto
 
----
-
-## Estructura del la practica 
 ```
-├── Network.h       # Declaración de la clase Network
-├── Network.cpp     # Implementación de los métodos de Network
-└── main.cpp        # Programa principal con pruebas y menú interactivo
+├── Network.h # Declaración de la clase Network  
+├── Network.cpp # Implementación de los métodos de Network  
+├── main.cpp # Programa principal con menú interactivo  
+└── red.txt # Carga de red desde el archivo 
 ```
 
----
+## Uso del programa (menú principal)
 
-## Ejemplo de salida
+Al ejecutar el programa, se mostrará un menú como este:
+
 ```
-A: B(4), C(10), D(5)
-B: A(4), C(3), D(1)
-C: A(10), B(3), D(2)
-D: A(5), B(1), C(2), E(7)
-E: D(7)
-Camino: A -> B -> C  | costo total=7
-Tabla de enrutamiento de A:
-Destino | Costo | Siguiente salto
---------------------------------
-A | 0 | -
-B | 4 | B
-C | 7 | B
-D | 5 | D
-E | 12 | D
+----MENÚ PRINCIPAL----
+
+1. Agregar router
+    
+2. Agregar enlace
+    
+3. Eliminar router
+    
+4. Mostrar red
+    
+5. Calcular caminos desde un router
+    
+6. Cargar red desde archivo
+    
+7. Crear red aleatoria
+    
+8. Salir
 ```
----
+
+### Ejemplo de uso
+
+#### Cargar una red desde archivo
+
+```
+Seleccione una opción: 6  
+Nombre del archivo (ej: red.txt): red.txt  
+Se cargaron 6 enlaces desde el archivo.
+```
+#### Mostrar la red
+
+```
+--- Red actual ---  
+Router A -> B(4) D(5) C(10)  
+Router B -> A(4) C(3) D(1)  
+Router C -> B(3) D(2) A(10)  
+Router D -> A(5) C(2) B(1)
+```
+
+#### Calcular caminos desde A
+
+```
+--- Caminos desde A ---  
+A B: costo 4 | camino: A B  
+A C: costo 7 | camino: A B C  
+A D: costo 5 | camino: A D
+```
+
 
