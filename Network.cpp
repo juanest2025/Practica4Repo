@@ -1,117 +1,140 @@
 #include "Network.h"
-
-void Network::agregarRouter(const string &nombre) {
-    if (!enlaces.count(nombre)) enlaces[nombre] = {};
+#include <fstream>
+#include <cstdlib>
+#include <ctime>
+//agregar router
+void Network::agregarRouter(const string& nombre) {
+    if (!enlaces.count(nombre)) {
+        enlaces[nombre] = {};
+    }
 }
 
-void Network::eliminarRouter(const string &nombre) {
-    enlaces.erase(nombre);
-    for (auto &p : enlaces)
-        p.second.erase(nombre);
-    tablas.erase(nombre);
-}
-
-void Network::agregarEnlace(const string &a, const string &b, int costo) {
+//agregar enlace entre routers
+void Network::agregarEnlace(const string& a, const string& b, int costo) {
     agregarRouter(a);
     agregarRouter(b);
     enlaces[a][b] = costo;
-    enlaces[b][a] = costo;
+    enlaces[b][a] = costo; // Enlace bidireccional
 }
 
-void Network::eliminarEnlace(const string &a, const string &b) {
-    if (enlaces.count(a)) enlaces[a].erase(b);
-    if (enlaces.count(b)) enlaces[b].erase(a);
+//eliminar router
+void Network::eliminarRouter(const string& nombre) {
+    enlaces.erase(nombre);
+    for (auto& [r, vecinos] : enlaces)
+        vecinos.erase(nombre);
 }
 
-void Network::mostrarGrafo() const {
-    cout << "Topología actual de la red:\n";
-    for (auto &r : enlaces) {
-        cout << r.first << ": ";
-        bool first = true;
-        for (auto &v : r.second) {
-            if (!first) cout << ", ";
-            cout << v.first << "(" << v.second << ")";
-            first = false;
-        }
-        cout << "\n";
+//mostrar red
+void Network::mostrar() {
+    cout << "\n--- Red actual ---\n";
+    for (auto& [r, vecinos] : enlaces) {
+        cout << "Router " << r << " -> ";
+        for (auto& [v, costo] : vecinos)
+            cout << v << "(" << costo << ") ";
+        cout << endl;
     }
 }
 
-void Network::mostrarVecinos(const string &router) const {
-    if (!enlaces.count(router)) {
-        cout << "El router '" << router << "' no existe.\n";
+//calcula camino más corto (Dijkstra)
+void Network::caminoMasCorto(const string& origen) {
+    if (!enlaces.count(origen)) {
+        cout << "El router no existe.\n";
         return;
     }
-    cout << "Vecinos de " << router << ":\n";
-    for (auto &v : enlaces.at(router))
-        cout << "  " << v.first << " (costo=" << v.second << ")\n";
-}
 
-void Network::inicializarTablas() {
-    tablas.clear();
-    for (auto &r : enlaces) {
-        string router = r.first;
-        for (auto &d : enlaces) {
-            string destino = d.first;
-            if (router == destino)
-                tablas[router][destino] = {0, router};
-            else if (enlaces[router].count(destino))
-                tablas[router][destino] = {enlaces[router][destino], destino};
-            else
-                tablas[router][destino] = {INT_MAX / 4, "-"};
-        }
+    map<string, int> dist;
+    map<string, string> previo;
+    vector<string> routers;
+
+    for (auto& [r, _] : enlaces) {
+        dist[r] = INT_MAX;
+        routers.push_back(r);
     }
-}
+    dist[origen] = 0;
 
-void Network::intercambiarVectores() {
-    bool actualizado = true;
-    while (actualizado) {
-        actualizado = false;
-        for (auto &r : enlaces) {
-            string router = r.first;
-            for (auto &vecino : enlaces[router]) {
-                string v = vecino.first;
-                int costoDirecto = vecino.second;
-                for (auto &destino : tablas[v]) {
-                    string d = destino.first;
-                    int costo_v = destino.second.first;
-                    if (costo_v == INT_MAX / 4) continue;
-                    int nuevoCosto = costoDirecto + costo_v;
-                    if (nuevoCosto < tablas[router][d].first) {
-                        tablas[router][d] = {nuevoCosto, v};
-                        actualizado = true;
-                    }
-                }
+    while (!routers.empty()) {
+        auto minIt = min_element(routers.begin(), routers.end(), [&](string a, string b) {
+            return dist[a] < dist[b];
+        });
+
+        string actual = *minIt;
+        routers.erase(minIt);
+
+        for (auto& [vecino, costo] : enlaces[actual]) {
+            if (dist[actual] != INT_MAX && dist[actual] + costo < dist[vecino]) {
+                dist[vecino] = dist[actual] + costo;
+                previo[vecino] = actual;
             }
         }
     }
+
+    cout << "\n--- Caminos desde " << origen << " ---\n";
+    for (auto& [destino, d] : dist) {
+        if (destino == origen) continue;
+        cout << "A " << destino << ": ";
+        if (d == INT_MAX) {
+            cout << "sin conexión.\n";
+            continue;
+        }
+        cout << "costo " << d << " | camino: ";
+        vector<string> ruta;
+        string actual = destino;
+        while (actual != origen && previo.count(actual)) {
+            ruta.push_back(actual);
+            actual = previo[actual];
+        }
+        ruta.push_back(origen);
+        reverse(ruta.begin(), ruta.end());
+        for (string r : ruta) cout << r << " ";
+        cout << endl;
+    }
 }
 
-void Network::mostrarTabla(const string &router) const {
-    if (!tablas.count(router)) {
-        cout << "El router '" << router << "' no existe o no tiene tabla.\n";
+//cargar desde un .txt
+void Network::cargarDesdeArchivo(const string& nombreArchivo) {
+    ifstream archivo(nombreArchivo);
+    if (!archivo.is_open()) {
+        cout << "No se pudo abrir el archivo.\n";
         return;
     }
-    cout << "Tabla de enrutamiento para " << router << ":\n";
-    cout << "Destino | Costo | Siguiente salto\n";
-    cout << "--------------------------------\n";
-    for (auto &p : tablas.at(router)) {
-        string destino = p.first;
-        int costo = p.second.first;
-        string next = p.second.second;
-        if (costo >= INT_MAX / 4)
-            cout << destino << " | inalcanzable\n";
-        else
-            cout << destino << " | " << costo << " | " << (next == router ? "-" : next) << "\n";
+
+    string a, b;
+    int costo;
+    int contador = 0;
+
+    while (archivo >> a >> b >> costo) {
+        agregarEnlace(a, b, costo);
+        contador++;
     }
+
+    archivo.close();
+    cout << "Se cargaron " << contador << " enlaces desde el archivo.\n";
 }
 
-void Network::crearEjemploPequeño() {
-    agregarEnlace("A", "B", 4);
-    agregarEnlace("A", "D", 5);
-    agregarEnlace("A", "C", 10);
-    agregarEnlace("B", "C", 3);
-    agregarEnlace("B", "D", 1);
-    agregarEnlace("C", "D", 2);
-    agregarEnlace("D", "E", 7);
+//crear red aleatoria
+void Network::crearRedAleatoria(int cantidadRouters, int conexionesPorRouter) {
+    enlaces.clear();
+    srand(time(nullptr));
+
+    //crear nombres: A, B...
+    vector<string> nombres;
+    for (int i = 0; i < cantidadRouters; i++) {
+        string nombre = string(1, 'A' + i);
+        agregarRouter(nombre);
+        nombres.push_back(nombre);
+    }
+
+    //crear conexiones aleatorias
+    for (int i = 0; i < cantidadRouters; i++) {
+        for (int j = 0; j < conexionesPorRouter; j++) {
+            string a = nombres[i];
+            string b = nombres[rand() % cantidadRouters];
+            if (a != b) {
+                int costo = 1 + rand() % 10;
+                agregarEnlace(a, b, costo);
+            }
+        }
+    }
+
+    cout << "Red aleatoria creada con " << cantidadRouters << " routers.\n";
 }
